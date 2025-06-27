@@ -304,6 +304,13 @@ export async function getAnalyticsData(surveyId: number) {
       text: "Satisfaction with previous survey changes",
       section: "previous_survey",
     },
+
+    // Suggestions
+    suggestions: {
+      text: "What ideas or suggestions do you have for us to make our company an even better place to work?",
+      section: "suggestions",
+      type: "text",
+    },
   };
 
   // Group responses by section and question
@@ -314,46 +321,77 @@ export async function getAnalyticsData(surveyId: number) {
       sections[mapping.section] = {};
     }
 
-    // Initialize all possible response options (1-5 for scale questions)
-    const questionResponses: { [key: string]: number } = {
-      "1": 0,
-      "2": 0,
-      "3": 0,
-      "4": 0,
-      "5": 0,
-    };
-    let totalQuestionResponses = 0;
+    const questionType = (mapping as any).type || "scale";
 
-    // Count actual responses for this question
-    responses.forEach((row: any) => {
-      const value = row[questionKey];
-      if (value !== null && value !== undefined && value !== "") {
-        const stringValue = String(value);
-        if (questionResponses.hasOwnProperty(stringValue)) {
-          questionResponses[stringValue]++;
+    if (questionType === "text") {
+      // Handle text responses (like suggestions)
+      const textResponses: string[] = [];
+      let totalQuestionResponses = 0;
+
+      responses.forEach((row: any) => {
+        const value = row[questionKey];
+        if (value !== null && value !== undefined && value !== "") {
+          textResponses.push(String(value).trim());
           totalQuestionResponses++;
         }
-      }
-    });
+      });
 
-    // Always include the question, even if no responses
-    sections[mapping.section][questionKey] = {
-      question: mapping.text,
-      type: "scale",
-      totalResponses: totalQuestionResponses,
-      responses: Object.entries(questionResponses)
-        .map(([option, count]) => ({
-          option,
-          count,
+      sections[mapping.section][questionKey] = {
+        question: mapping.text,
+        type: "text",
+        totalResponses: totalQuestionResponses,
+        responses: textResponses.map((text, index) => ({
+          option: `Response ${index + 1}`,
+          text: text,
+          count: 1,
           percentage:
             totalQuestionResponses > 0
-              ? Number.parseFloat(
-                  ((count / totalQuestionResponses) * 100).toFixed(1)
-                )
+              ? Number.parseFloat((100 / totalQuestionResponses).toFixed(1))
               : 0,
-        }))
-        .sort((a, b) => Number(a.option) - Number(b.option)),
-    };
+        })),
+      };
+    } else {
+      // Handle scale responses (1-5)
+      const questionResponses: { [key: string]: number } = {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+      };
+      let totalQuestionResponses = 0;
+
+      // Count actual responses for this question
+      responses.forEach((row: any) => {
+        const value = row[questionKey];
+        if (value !== null && value !== undefined && value !== "") {
+          const stringValue = String(value);
+          if (questionResponses.hasOwnProperty(stringValue)) {
+            questionResponses[stringValue]++;
+            totalQuestionResponses++;
+          }
+        }
+      });
+
+      // Always include the question, even if no responses
+      sections[mapping.section][questionKey] = {
+        question: mapping.text,
+        type: "scale",
+        totalResponses: totalQuestionResponses,
+        responses: Object.entries(questionResponses)
+          .map(([option, count]) => ({
+            option,
+            count,
+            percentage:
+              totalQuestionResponses > 0
+                ? Number.parseFloat(
+                    ((count / totalQuestionResponses) * 100).toFixed(1)
+                  )
+                : 0,
+          }))
+          .sort((a, b) => Number(a.option) - Number(b.option)),
+      };
+    }
   });
 
   return {
