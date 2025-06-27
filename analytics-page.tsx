@@ -64,7 +64,7 @@ interface SurveyData {
   totalResponses: number;
   completionRate: number;
   averageCompletionTime: string;
-  sections: any[];
+  sections: SurveySection[];
   keyInsights: KeyInsight[];
 }
 
@@ -122,6 +122,7 @@ export default function AnalyticsPage({ onBack }: AnalyticsPageProps) {
     {}
   );
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("questions");
 
   const loadAnalyticsData = async () => {
     setLoading(true);
@@ -142,78 +143,91 @@ export default function AnalyticsPage({ onBack }: AnalyticsPageProps) {
   useEffect(() => {
     // Load Chart.js dynamically
     const loadChartJS = async () => {
-      if (!surveyData) return;
+      if (
+        !surveyData ||
+        surveyData.sections.length === 0 ||
+        activeTab !== "charts"
+      )
+        return;
 
-      const { Chart, registerables } = await import("chart.js");
-      Chart.register(...registerables);
+      try {
+        const { Chart, registerables } = await import("chart.js");
+        Chart.register(...registerables);
 
-      // Clear existing charts
-      Object.values(chartRefs.current).forEach((canvas) => {
-        if (canvas) {
-          const existingChart = Chart.getChart(canvas);
-          if (existingChart) {
-            existingChart.destroy();
+        // Clear existing charts
+        Object.values(chartRefs.current).forEach((canvas) => {
+          if (canvas) {
+            const existingChart = Chart.getChart(canvas);
+            if (existingChart) {
+              existingChart.destroy();
+            }
           }
-        }
-      });
+        });
 
-      // Create charts for each question
-      surveyData.sections.forEach(
-        (section: SurveySection, sectionIndex: number) => {
-          section.questions.forEach(
-            (question: SurveyQuestion, questionIndex: number) => {
-              const canvas =
-                chartRefs.current[`chart-${sectionIndex}-${questionIndex}`];
-              if (canvas) {
-                const ctx = canvas.getContext("2d");
-                if (ctx) {
-                  new Chart(ctx, {
-                    type: "bar",
-                    data: {
-                      labels: question.responses.map(
-                        (r: ResponseCount) => r.option
-                      ),
-                      datasets: [
-                        {
-                          data: question.responses.map(
-                            (r: ResponseCount) => r.count
-                          ),
-                          backgroundColor: [
-                            "#ef4444",
-                            "#f87171",
-                            "#fb923c",
-                            "#fbbf24",
-                            "#22c55e",
-                          ],
-                          borderWidth: 1,
+        // Create charts for each question
+        surveyData.sections.forEach(
+          (section: SurveySection, sectionIndex: number) => {
+            section.questions.forEach(
+              (question: SurveyQuestion, questionIndex: number) => {
+                const canvas =
+                  chartRefs.current[`chart-${sectionIndex}-${questionIndex}`];
+                if (
+                  canvas &&
+                  question.responses &&
+                  question.responses.length > 0
+                ) {
+                  const ctx = canvas.getContext("2d");
+                  if (ctx) {
+                    new Chart(ctx, {
+                      type: "bar",
+                      data: {
+                        labels: question.responses.map(
+                          (r: ResponseCount) => r.option
+                        ),
+                        datasets: [
+                          {
+                            data: question.responses.map(
+                              (r: ResponseCount) => r.count
+                            ),
+                            backgroundColor: [
+                              "#ef4444",
+                              "#f87171",
+                              "#fb923c",
+                              "#fbbf24",
+                              "#22c55e",
+                            ],
+                            borderWidth: 1,
+                          },
+                        ],
+                      },
+                      options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            display: false,
+                          },
                         },
-                      ],
-                    },
-                    options: {
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: {
-                        legend: {
-                          display: false,
+                        scales: {
+                          y: {
+                            beginAtZero: true,
+                          },
                         },
                       },
-                      scales: {
-                        y: {
-                          beginAtZero: true,
-                        },
-                      },
-                    },
-                  });
+                    });
+                  }
                 }
               }
-            }
-          );
-        }
-      );
+            );
+          }
+        );
+      } catch (error) {
+        console.error("Error loading Chart.js:", error);
+      }
     };
 
     loadChartJS();
-  }, [surveyData, openSections]);
+  }, [surveyData, activeTab]);
 
   const exportData = async (format: "json" | "csv" | "pdf" | "excel") => {
     if (!surveyData) return;
@@ -587,11 +601,15 @@ export default function AnalyticsPage({ onBack }: AnalyticsPageProps) {
 
         {/* Main Analytics */}
         {surveyData && (
-          <Tabs defaultValue="questions" className="space-y-6">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="space-y-6"
+          >
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="questions">Question Analysis</TabsTrigger>
               <TabsTrigger value="charts">Visual Charts</TabsTrigger>
-              <TabsTrigger value="insights">Key Insights</TabsTrigger>
+              {/* <TabsTrigger value="insights">Key Insights</TabsTrigger> */}
             </TabsList>
 
             <TabsContent value="questions" className="space-y-6">
@@ -819,7 +837,7 @@ export default function AnalyticsPage({ onBack }: AnalyticsPageProps) {
               </div>
             </TabsContent>
 
-            <TabsContent value="insights" className="space-y-6">
+            {/* <TabsContent value="insights" className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {surveyData.keyInsights.map(
                   (insight: KeyInsight, index: number) => (
@@ -845,7 +863,7 @@ export default function AnalyticsPage({ onBack }: AnalyticsPageProps) {
                   )
                 )}
               </div>
-            </TabsContent>
+            </TabsContent> */}
           </Tabs>
         )}
       </div>

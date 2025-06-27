@@ -314,36 +314,46 @@ export async function getAnalyticsData(surveyId: number) {
       sections[mapping.section] = {};
     }
 
-    // Count responses for this question
-    const questionResponses: { [key: string]: number } = {};
+    // Initialize all possible response options (1-5 for scale questions)
+    const questionResponses: { [key: string]: number } = {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+    };
     let totalQuestionResponses = 0;
 
+    // Count actual responses for this question
     responses.forEach((row: any) => {
       const value = row[questionKey];
       if (value !== null && value !== undefined && value !== "") {
         const stringValue = String(value);
-        questionResponses[stringValue] =
-          (questionResponses[stringValue] || 0) + 1;
-        totalQuestionResponses++;
+        if (questionResponses.hasOwnProperty(stringValue)) {
+          questionResponses[stringValue]++;
+          totalQuestionResponses++;
+        }
       }
     });
 
-    if (totalQuestionResponses > 0) {
-      sections[mapping.section][questionKey] = {
-        question: mapping.text,
-        type: "scale",
-        totalResponses: totalQuestionResponses,
-        responses: Object.entries(questionResponses)
-          .map(([option, count]) => ({
-            option,
-            count,
-            percentage: Number.parseFloat(
-              ((count / totalQuestionResponses) * 100).toFixed(1)
-            ),
-          }))
-          .sort((a, b) => Number(a.option) - Number(b.option)),
-      };
-    }
+    // Always include the question, even if no responses
+    sections[mapping.section][questionKey] = {
+      question: mapping.text,
+      type: "scale",
+      totalResponses: totalQuestionResponses,
+      responses: Object.entries(questionResponses)
+        .map(([option, count]) => ({
+          option,
+          count,
+          percentage:
+            totalQuestionResponses > 0
+              ? Number.parseFloat(
+                  ((count / totalQuestionResponses) * 100).toFixed(1)
+                )
+              : 0,
+        }))
+        .sort((a, b) => Number(a.option) - Number(b.option)),
+    };
   });
 
   return {
