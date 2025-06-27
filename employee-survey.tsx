@@ -958,15 +958,17 @@ export default function EmployeeSurvey({
           <CardContent className="pb-6">{renderStep()}</CardContent>
 
           {currentStep < 11 && (
-            <div className="flex justify-between border-t p-6">
-              <Button
-                variant="outline"
-                onClick={handlePrevious}
-                disabled={currentStep === 0}
-              >
-                <ChevronLeft className="mr-2 h-4 w-4" />
-                Previous
-              </Button>
+            <div
+              className={`flex border-t p-6 ${
+                currentStep === 0 ? "justify-end" : "justify-between"
+              }`}
+            >
+              {currentStep > 0 && (
+                <Button variant="outline" onClick={handlePrevious}>
+                  <ChevronLeft className="mr-2 h-4 w-4" />
+                  Previous
+                </Button>
+              )}
 
               {(wentBack ||
                 currentStep === 10 ||
