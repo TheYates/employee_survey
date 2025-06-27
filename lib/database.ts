@@ -356,10 +356,44 @@ export async function getAnalyticsData(surveyId: number) {
 export async function getCompletionRate(surveyId: number): Promise<number> {
   const result = await sql`
     SELECT
-      COUNT(CASE WHEN is_complete = true THEN 1 END)::float / COUNT(*)::float * 100 as completion_rate
+      COUNT(*) as total_responses,
+      COUNT(CASE WHEN is_complete = true THEN 1 END) as completed_responses
     FROM survey_responses
     WHERE survey_id = ${surveyId}
   `;
 
-  return Number.parseFloat(result[0]?.completion_rate || "0");
+  const totalResponses = Number.parseInt(result[0]?.total_responses || "0");
+  const completedResponses = Number.parseInt(
+    result[0]?.completed_responses || "0"
+  );
+
+  if (totalResponses === 0) {
+    return 0;
+  }
+
+  return Math.round((completedResponses / totalResponses) * 100 * 10) / 10; // Round to 1 decimal place
+}
+
+// Get average completion time for completed surveys
+export async function getAverageCompletionTime(
+  surveyId: number
+): Promise<string> {
+  const result = await sql`
+    SELECT
+      AVG(EXTRACT(EPOCH FROM (completed_at - created_at))) as avg_seconds
+    FROM survey_responses
+    WHERE survey_id = ${surveyId}
+      AND is_complete = true
+      AND completed_at IS NOT NULL
+      AND created_at IS NOT NULL
+  `;
+
+  const avgSeconds = Number.parseFloat(result[0]?.avg_seconds || "0");
+
+  if (avgSeconds === 0) {
+    return "0 minutes";
+  }
+
+  const minutes = Math.round((avgSeconds / 60) * 10) / 10; // Round to 1 decimal place
+  return `${minutes} minutes`;
 }

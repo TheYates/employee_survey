@@ -19,7 +19,6 @@ import {
   ArrowLeft,
   Download,
   Users,
-  TrendingUp,
   AlertCircle,
   CheckCircle,
   ChevronDown,
@@ -34,40 +33,6 @@ import {
 // Remove database imports since we'll use API route instead
 
 // Define interfaces for survey data
-interface SurveyResponse {
-  consent?: string;
-  declineReason?: string;
-  roleHappiness?: string;
-  recommendCompany?: string;
-  motivated?: string;
-  contributionsValued?: string;
-  learningOpportunities?: string;
-  comfortableWithManager?: string;
-  belongsWithPeers?: string;
-  hasResources?: string;
-  wellBeing?: string;
-  wellnessResources?: string;
-  stressLevel?: string;
-  teamCommunication?: string;
-  teamWorksWell?: string;
-  teamSupport?: string;
-  careerOpportunities?: string;
-  trainingEffectiveness?: string;
-  recognitionForAchievements?: string;
-  companyCulture?: string;
-  senseOfBelonging?: string;
-  valuesReflected?: string;
-  leadershipCommunication?: string;
-  leadershipApproachable?: string;
-  trustLeadership?: string;
-  initiativesSatisfaction?: string;
-  knowWhereToGoForQuestions?: string;
-  knowSurveyConsultation?: string;
-  previousSurveyChanges?: string;
-  suggestions?: string;
-  timestamp?: string;
-  [key: string]: any;
-}
 
 interface ResponseCount {
   option: string;
@@ -99,7 +64,6 @@ interface SurveyData {
   totalResponses: number;
   completionRate: number;
   averageCompletionTime: string;
-  responseRate: number;
   sections: any[];
   keyInsights: KeyInsight[];
 }
@@ -132,7 +96,6 @@ const loadSurveyData = async () => {
       totalResponses: 0,
       completionRate: 0,
       averageCompletionTime: "0 minutes",
-      responseRate: 0,
       sections: [],
       keyInsights: [
         {
@@ -573,7 +536,7 @@ export default function AnalyticsPage({ onBack }: AnalyticsPageProps) {
 
         {/* Key Metrics */}
         {surveyData && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
@@ -600,22 +563,6 @@ export default function AnalyticsPage({ onBack }: AnalyticsPageProps) {
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Completion Rate
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <TrendingUp className="h-8 w-8 text-blue-600" />
-                  <div>
-                    <p className="text-2xl font-bold">
-                      {surveyData.responseRate}%
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Response Rate
                     </p>
                   </div>
                 </div>
